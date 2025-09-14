@@ -17,26 +17,34 @@ This is an Expo React Native application using TypeScript. The project is set up
 ## Common Commands
 
 ### Development
+
 - `npm start` - Start Expo development server
 - `npm run android` - Start for Android emulator
-- `npm run ios` - Start for iOS simulator  
+- `npm run ios` - Start for iOS simulator
 - `npm run web` - Start for web browser
 - `npx expo start` - Alternative way to start development server
 
 ### Code Quality
+
 - `npm run lint` - Run ESLint (using expo lint configuration)
+- `npm run format` - Format all code files with Prettier
+- `npm run format:check` - Check if files are formatted correctly
 
 ### Project Management
+
 - `npm run reset-project` - Move starter code to `app-example/` and create fresh `app/` directory
 
 ## Development Notes
 
 ### Project Structure States
+
 The project can exist in two states:
+
 1. **Fresh state**: Contains example code in `app/`, `components/`, `hooks/`, `constants/`, `scripts/`
 2. **Reset state**: Example code moved to `app-example/`, with minimal `app/` containing only `index.tsx` and `_layout.tsx`
 
 ### Key Dependencies
+
 - Expo Router for navigation and routing
 - React Navigation for tab navigation
 - Expo Vector Icons and Expo Symbols for iconography
@@ -44,12 +52,14 @@ The project can exist in two states:
 - TypeScript with strict mode enabled
 
 ### Component Patterns
+
 - Uses `expo-router` Stack and Tabs components for navigation
 - Implements themed components that adapt to light/dark color schemes
 - Custom haptic feedback integration for tab interactions
 - SF Symbols support via IconSymbol component on iOS
 
 ## TypeScript Configuration
+
 - Strict mode enabled
 - Path mapping configured for `@/*` imports
 - Expo TypeScript base configuration extended
