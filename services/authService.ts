@@ -1,3 +1,6 @@
+import * as SecureStore from 'expo-secure-store';
+import axios from 'axios';
+
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -15,57 +18,190 @@ export interface AuthResponse {
   token?: string; // JWT token for database auth
 }
 
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role?: string;
+}
+
 export class AuthService {
-  private static readonly VALID_CREDENTIALS = {
-    email: 'admin@admin.com',
-    password: '123456'
-  };
+  private static readonly API_BASE_URL = 'YOUR_LARAVEL_API_URL'; // Replace with your Laravel API URL
+  private static readonly TOKEN_KEY = 'authToken';
+  private static readonly USER_KEY = 'userData';
 
   static async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      // TODO: Replace this with actual database API call
-      // const response = await fetch('YOUR_API_ENDPOINT/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(credentials)
-      // });
-      // const data = await response.json();
+      const response = await axios.post(`${this.API_BASE_URL}/api/login`, credentials, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
 
-      // Simulate API call delay for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const data = response.data;
 
-      const { email, password } = credentials;
+      if (data.success && data.token) {
+        // Store token and user data securely
+        await this.storeToken(data.token);
+        if (data.user) {
+          await this.storeUser(data.user);
+        }
 
-      // TEMPORARY: Remove this when connecting to database
-      if (email === this.VALID_CREDENTIALS.email && password === this.VALID_CREDENTIALS.password) {
         return {
           success: true,
-          message: 'Login exitoso',
-          user: {
-            id: '1',
-            email: email,
-            name: 'Administrador',
-            role: 'admin'
-          },
-          token: 'mock-jwt-token-123' // In real app, this comes from your API
+          message: data.message || 'Login exitoso',
+          user: data.user,
+          token: data.token
         };
       }
 
       return {
         success: false,
-        message: 'Credenciales inválidas'
+        message: data.message || 'Credenciales inválidas'
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('AuthService login error:', error);
-      return {
-        success: false,
-        message: 'Error de conexión con el servidor'
-      };
+
+      if (error.response) {
+        // Server responded with error status
+        return {
+          success: false,
+          message: error.response.data?.message || 'Error en el servidor'
+        };
+      } else if (error.request) {
+        // Network error
+        return {
+          success: false,
+          message: 'Error de conexión con el servidor'
+        };
+      } else {
+        // Other error
+        return {
+          success: false,
+          message: 'Error inesperado'
+        };
+      }
     }
   }
 
   static async logout(): Promise<void> {
-    // Here you would clear tokens, etc.
-    console.log('Usuario deslogueado');
+    try {
+      // Optional: Call logout endpoint on Laravel API
+      const token = await this.getToken();
+      if (token) {
+        try {
+          await axios.post(`${this.API_BASE_URL}/api/logout`, {}, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json'
+            }
+          });
+        } catch (error) {
+          console.log('Logout API call failed, but clearing local data anyway');
+        }
+      }
+
+      // Clear stored data
+      await this.clearToken();
+      await this.clearUser();
+      console.log('Usuario deslogueado');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  }
+
+  // Token management methods
+  static async storeToken(token: string): Promise<void> {
+    try {
+      await SecureStore.setItemAsync(this.TOKEN_KEY, token);
+    } catch (error) {
+      console.error('Error storing token:', error);
+      throw error;
+    }
+  }
+
+  static async getToken(): Promise<string | null> {
+    try {
+      return await SecureStore.getItemAsync(this.TOKEN_KEY);
+    } catch (error) {
+      console.error('Error retrieving token:', error);
+      return null;
+    }
+  }
+
+  static async clearToken(): Promise<void> {
+    try {
+      await SecureStore.deleteItemAsync(this.TOKEN_KEY);
+    } catch (error) {
+      console.error('Error clearing token:', error);
+    }
+  }
+
+  // User data management methods
+  static async storeUser(user: User): Promise<void> {
+    try {
+      await SecureStore.setItemAsync(this.USER_KEY, JSON.stringify(user));
+    } catch (error) {
+      console.error('Error storing user data:', error);
+      throw error;
+    }
+  }
+
+  static async getUser(): Promise<User | null> {
+    try {
+      const userData = await SecureStore.getItemAsync(this.USER_KEY);
+      return userData ? JSON.parse(userData) : null;
+    } catch (error) {
+      console.error('Error retrieving user data:', error);
+      return null;
+    }
+  }
+
+  static async clearUser(): Promise<void> {
+    try {
+      await SecureStore.deleteItemAsync(this.USER_KEY);
+    } catch (error) {
+      console.error('Error clearing user data:', error);
+    }
+  }
+
+  // Authentication state methods
+  static async isAuthenticated(): Promise<boolean> {
+    try {
+      const token = await this.getToken();
+      return !!token;
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      return false;
+    }
+  }
+
+  static async validateToken(): Promise<boolean> {
+    try {
+      const token = await this.getToken();
+      if (!token) return false;
+
+      const response = await axios.get(`${this.API_BASE_URL}/api/user`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      return response.status === 200;
+    } catch (error) {
+      console.error('Token validation failed:', error);
+      // Clear invalid token
+      await this.clearToken();
+      await this.clearUser();
+      return false;
+    }
+  }
+
+  // Helper method to get authorization header
+  static async getAuthHeader(): Promise<{ Authorization: string } | {}> {
+    const token = await this.getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
   }
 }
