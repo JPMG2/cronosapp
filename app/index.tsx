@@ -32,7 +32,7 @@ export default function Index() {
     }
 
     try {
-      const response = await login({ email, password });
+      const response = await login({ email, password, device_name: 'mobile' });
       
       if (response.success) {
         Alert.alert('Éxito', response.message);

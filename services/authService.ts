@@ -4,6 +4,7 @@ import axios from 'axios';
 export interface LoginCredentials {
   email: string;
   password: string;
+  device_name: string;
 }
 
 export interface AuthResponse {
@@ -26,13 +27,16 @@ export interface User {
 }
 
 export class AuthService {
-  private static readonly API_BASE_URL = 'YOUR_LARAVEL_API_URL'; // Replace with your Laravel API URL
+  private static readonly API_BASE_URL = 'http://192.168.0.186:8000'
   private static readonly TOKEN_KEY = 'authToken';
   private static readonly USER_KEY = 'userData';
 
   static async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const response = await axios.post(`${this.API_BASE_URL}/api/login`, credentials, {
+      const response = await axios.post(`${this.API_BASE_URL}/api/login`, {
+        ...credentials,
+          device_name: 'mobile'
+      }, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
@@ -41,8 +45,8 @@ export class AuthService {
 
       const data = response.data;
 
-      if (data.success && data.token) {
-        // Store token and user data securely
+        if (data.token) {
+
         await this.storeToken(data.token);
         if (data.user) {
           await this.storeUser(data.user);
@@ -62,6 +66,12 @@ export class AuthService {
       };
     } catch (error: any) {
       console.error('AuthService login error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data,
+        status: error.response?.status
+      });
 
       if (error.response) {
         // Server responded with error status
