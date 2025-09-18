@@ -1,9 +1,35 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import { ApiService, DashboardData } from '@/services/apiService';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch dashboard data when component loads
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await ApiService.getDashboard();
+
+      if (response.success && response.data) {
+        setDashboardData(response.data);
+      } else {
+        Alert.alert('Error', response.error || 'Failed to load dashboard data');
+      }
+    } catch (error) {
+      console.error('Dashboard fetch error:', error);
+      Alert.alert('Error', 'Unexpected error loading dashboard');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -18,13 +44,33 @@ export default function Dashboard() {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>Dashboard</Text>
+        <Text style={styles.title}>Dashboard!!</Text>
         <Text style={styles.subtitle}>Solo usuarios autenticados pueden ver esto</Text>
-        
-        <View style={styles.userInfo}>
-          <Text style={styles.label}>ID: {user?.id}</Text>
-          <Text style={styles.label}>Rol: {user?.role}</Text>
-        </View>
+
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={styles.loadingText}>Loading dashboard data...</Text>
+          </View>
+        ) : (
+          <View style={styles.userInfo}>
+            <Text style={styles.label}>ID: {dashboardData?.user?.id || user?.id}</Text>
+            <Text style={styles.label}>Rol: {dashboardData?.user?.role || user?.role}</Text>
+
+            {dashboardData?.message && (
+              <Text style={styles.label}>Message: {dashboardData.message}</Text>
+            )}
+
+            {dashboardData?.stats && (
+              <View style={styles.statsContainer}>
+                <Text style={styles.statsTitle}>Statistics:</Text>
+                <Text style={styles.label}>Total Projects: {dashboardData.stats.totalProjects || 0}</Text>
+                <Text style={styles.label}>Active Projects: {dashboardData.stats.activeProjects || 0}</Text>
+                <Text style={styles.label}>Completed Tasks: {dashboardData.stats.completedTasks || 0}</Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -103,5 +149,27 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#666',
+  },
+  statsContainer: {
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  statsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
   },
 });

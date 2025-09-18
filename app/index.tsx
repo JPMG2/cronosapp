@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
-import { Image } from 'expo-image';
-import { ValidationUtils } from '@/utils/validation';
 import { useAuth } from '@/contexts/AuthContext';
+import { ValidationUtils } from '@/utils/validation';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function Index() {
   const [email, setEmail] = useState('');
@@ -36,8 +36,7 @@ export default function Index() {
       
       if (response.success) {
         Alert.alert('Éxito', response.message);
-        // Context automatically handles user state
-        console.log('User logged in successfully');
+        
         // Navigate to dashboard
         router.replace('/(protected)/dashboard');
       } else {
@@ -55,13 +54,14 @@ export default function Index() {
 
   return (
     <SafeAreaView style={styles.container}>
-
       <View style={styles.logoContainer}>
-        <View style={styles.logoPlaceholder}>
+        <View style={styles.logoWrapper}>
+          <View style={styles.logoCircle}>
             <Image
-                source={require('@/assets/images/logoc.png')}
-                style={{ width: 150, height: 150 }}
+              source={require('@/assets/images/logoc.png')}
+              style={styles.logoImage}
             />
+          </View>
         </View>
         <Text style={styles.sloganText}>Gestionamos el tiempo.</Text>
       </View>
@@ -99,7 +99,7 @@ export default function Index() {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleForgotPassword}>
-          <Text style={styles.forgotPasswordText}>Olvido contraseña?</Text>
+          <Text style={styles.forgotPasswordText}>¿Olvidó contraseña?</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -109,23 +109,53 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
     paddingHorizontal: 20,
   },
   logoContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 40,
   },
-  logoPlaceholder: {
-    width: 120,
-    height: 120,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 60,
+  logoWrapper: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logoCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 80,
+    backgroundColor: '#e6f0ff', // azul suave que combina con fondo
+    borderWidth: 4,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#ddd',
+    // Sombra para iOS
+    shadowColor: '#4A90E2',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.35,
+    shadowRadius: 25,
+    // Sombra para Android
+    elevation: 8,
+    // Borde sutil
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  logoImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  sloganText: {
+    fontSize: 18,
+    color: '#2C3E50',
+    fontWeight: '600',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
   formContainer: {
     flex: 1,
@@ -135,21 +165,37 @@ const styles = StyleSheet.create({
   input: {
     height: 50,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderColor: '#E0E6ED',
+    borderRadius: 12,
     paddingHorizontal: 15,
     marginBottom: 15,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   loginButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#4A90E2',
     height: 50,
-    borderRadius: 8,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 20,
+    shadowColor: '#4A90E2',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   loginButtonText: {
     color: '#fff',
@@ -158,8 +204,9 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     textAlign: 'center',
-    color: '#007AFF',
+    color: '#4A90E2',
     fontSize: 14,
+    fontWeight: '500',
   },
   inputError: {
     borderColor: '#FF3B30',
@@ -173,14 +220,6 @@ const styles = StyleSheet.create({
   },
   loginButtonDisabled: {
     backgroundColor: '#A0A0A0',
-  },
-  sloganText: {
-    fontSize: 22,
-    color: '#546793',
-    fontWeight: '700',
-    fontStyle: 'italic',
-    letterSpacing: 1,
-    marginTop: 25,
-    textAlign: 'center',
+    shadowOpacity: 0.1,
   },
 });

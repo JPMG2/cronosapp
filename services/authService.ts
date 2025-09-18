@@ -1,5 +1,5 @@
-import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
 export interface LoginCredentials {
   email: string;
@@ -65,7 +65,7 @@ export class AuthService {
         message: data.message || 'Credenciales inválidas'
       };
     } catch (error: any) {
-      console.error('AuthService login error:', error);
+      
       console.error('Error details:', {
         message: error.message,
         code: error.code,
@@ -115,7 +115,7 @@ export class AuthService {
       // Clear stored data
       await this.clearToken();
       await this.clearUser();
-      console.log('Usuario deslogueado');
+      
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -153,7 +153,7 @@ export class AuthService {
     try {
       await SecureStore.setItemAsync(this.USER_KEY, JSON.stringify(user));
     } catch (error) {
-      console.error('Error storing user data:', error);
+     
       throw error;
     }
   }

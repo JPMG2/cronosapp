@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthService, LoginCredentials, AuthResponse } from '@/services/authService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface User {
   id?: string;
@@ -33,12 +32,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Check if user is already logged in when app starts
   const checkAuthStatus = async () => {
     try {
-      const storedUser = await AsyncStorage.getItem('user');
-      const token = await AsyncStorage.getItem('authToken');
-      
-      if (storedUser && token) {
-        setUser(JSON.parse(storedUser));
-        // In real app, you'd verify token with your API here
+      const isAuthenticated = await AuthService.isAuthenticated();
+
+      if (isAuthenticated) {
+        const storedUser = await AuthService.getUser();
+        if (storedUser) {
+          setUser(storedUser);
+        }
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
@@ -50,16 +50,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
       const response = await AuthService.login(credentials);
-      
+
       if (response.success && response.user) {
-        // Store user data and token
-        await AsyncStorage.setItem('user', JSON.stringify(response.user));
-        // In real app, you'd store the JWT token from your API
-        await AsyncStorage.setItem('authToken', 'mock-jwt-token');
-        
         setUser(response.user);
       }
-      
+
       return response;
     } catch (error) {
       console.error('Login error in context:', error);
@@ -72,12 +67,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = async () => {
     try {
-      // Clear stored data
-      await AsyncStorage.multiRemove(['user', 'authToken']);
-      setUser(null);
-      
-      // Call logout service (for API cleanup if needed)
+      // Call logout service (clears stored data and calls API)
       await AuthService.logout();
+      setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
     }
