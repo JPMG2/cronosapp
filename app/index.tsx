@@ -3,16 +3,29 @@ import { ValidationUtils } from '@/utils/validation';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+
+const screenWidth = Dimensions.get('window').width;
 
 export default function Index() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  
+  const [focusedInput, setFocusedInput] = useState<'email' | 'password' | null>(null);
+
   const { login, isLoading, isAuthenticated } = useAuth();
 
-  // Redirect to dashboard if already logged in
   useEffect(() => {
     if (isAuthenticated) {
       router.replace('/(protected)/dashboard');
@@ -20,12 +33,9 @@ export default function Index() {
   }, [isAuthenticated]);
 
   const handleLogin = async () => {
-    // Clear previous errors
     setErrors({});
-
-    // Validate form
     const validation = ValidationUtils.validateLoginForm(email, password);
-    
+
     if (!validation.isValid) {
       setErrors(validation.errors);
       return;
@@ -33,11 +43,9 @@ export default function Index() {
 
     try {
       const response = await login({ email, password, device_name: 'mobile' });
-      
+
       if (response.success) {
         Alert.alert('Éxito', response.message);
-        
-        // Navigate to dashboard
         router.replace('/(protected)/dashboard');
       } else {
         Alert.alert('Error', response.message);
@@ -53,63 +61,78 @@ export default function Index() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.logoContainer}>
-        <View style={styles.logoWrapper}>
-          <View style={styles.logoCircle}>
-            <Image
-              source={require('@/assets/images/logoc.png')}
-              style={styles.logoImage}
-            />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <SafeAreaView style={styles.container}>
+        <View style={styles.logoContainer}>
+          <View style={styles.logoWrapper}>
+            <View style={styles.logoCircle}>
+              <Image
+                source={require('@/assets/images/logoc.png')}
+                style={styles.logoImage}
+              />
+            </View>
           </View>
+          <Text style={styles.sloganText}>Gestionamos el tiempo</Text>
         </View>
-        <Text style={styles.sloganText}>Gestionamos el tiempo.</Text>
-      </View>
 
-      <View style={styles.formContainer}>
-        <TextInput
-          style={[styles.input, errors.email && styles.inputError]}
-          placeholder="Correo"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          editable={!isLoading}
-        />
-        {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+        <View style={[styles.formContainer, { width: screenWidth * 0.9 }]}>
+          <TextInput
+            style={[
+                styles.input,
+                errors.email ? styles.inputError : (focusedInput === 'email' && styles.inputFocused),
+           ]}
+            placeholder="Correo"
+            value={email}
+            onChangeText={setEmail}
+            onFocus={() => setFocusedInput('email')}
+            onBlur={() => setFocusedInput(null)}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            editable={!isLoading}
+          />
+          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
-        <TextInput
-          style={[styles.input, errors.password && styles.inputError]}
-          placeholder="Contraseña"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          editable={!isLoading}
-        />
-        {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+          <TextInput
+            style={[
+                styles.input,
+                errors.password ? styles.inputError : (focusedInput === 'password' && styles.inputFocused),
+           ]}
+            placeholder="Contraseña"
+            value={password}
+            onChangeText={setPassword}
+            onFocus={() => setFocusedInput('password')}
+            onBlur={() => setFocusedInput(null)}
+            secureTextEntry
+            editable={!isLoading}
+          />
+          {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
-        <TouchableOpacity 
-          style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
-          onPress={handleLogin}
-          disabled={isLoading}
-        >
-          <Text style={styles.loginButtonText}>
-            {isLoading ? 'Iniciando sesión...' : 'Inicio'}
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            <Text style={styles.loginButtonText}>
+              {isLoading ? 'Iniciando sesión...' : 'Inicio'}
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleForgotPassword}>
-          <Text style={styles.forgotPasswordText}>¿Olvidó contraseña?</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+          <TouchableOpacity onPress={handleForgotPassword}>
+            <Text style={styles.forgotPasswordText}>¿Olvidó contraseña?</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#dbebfcff',
     paddingHorizontal: 20,
   },
   logoContainer: {
@@ -126,22 +149,16 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 80,
-    backgroundColor: '#e6f0ff', // azul suave que combina con fondo
-    borderWidth: 4,
+    backgroundColor: '#dbeafe',
+    borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
-    // Sombra para iOS
-    shadowColor: '#4A90E2',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.35,
-    shadowRadius: 25,
-    // Sombra para Android
-    elevation: 8,
-    // Borde sutil
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 6,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   logoImage: {
     width: 100,
@@ -149,77 +166,90 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   sloganText: {
-    fontSize: 18,
-    color: '#2C3E50',
-    fontWeight: '600',
+    fontSize: 16,
+    color: '#1e293b',
+    fontWeight: '500',
     marginBottom: 8,
-    letterSpacing: 0.5,
-    fontStyle: 'italic',
     textAlign: 'center',
+    fontStyle: 'italic',
   },
   formContainer: {
     flex: 1,
     justifyContent: 'center',
-    paddingBottom: 50,
+    alignSelf: 'center',
+    paddingBottom: Platform.OS === 'ios' ? 60 : 40,
   },
   input: {
-    height: 50,
+    height: screenWidth < 360 ? 45 : 50,
     borderWidth: 1,
-    borderColor: '#E0E6ED',
+    borderColor: '#cbd5e1',
     borderRadius: 12,
     paddingHorizontal: 15,
     marginBottom: 15,
-    fontSize: 16,
-    backgroundColor: '#ffffff',
+    fontSize: screenWidth < 360 ? 14 : 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    color: '#1e293b',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  inputError: {
+    borderColor: '#f16565ff',
+    borderWidth: 2,
+  },
+  errorText: {
+    color: '#f16565ff',
+    fontSize: 12,
+    marginBottom: 10,
+    marginLeft: 5,
   },
   loginButton: {
-    backgroundColor: '#4A90E2',
-    height: 50,
+    backgroundColor: '#3b82f6',
+    height: screenWidth < 360 ? 45 : 50,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 20,
-    shadowColor: '#4A90E2',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
   },
   loginButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
+  loginButtonDisabled: {
+    backgroundColor: '#94a3b8',
+    shadowOpacity: 0.1,
+  },
   forgotPasswordText: {
     textAlign: 'center',
-    color: '#4A90E2',
+    color: '#3b82f6',
     fontSize: 14,
     fontWeight: '500',
   },
-  inputError: {
-    borderColor: '#FF3B30',
-    borderWidth: 2,
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 12,
-    marginBottom: 10,
-    marginLeft: 5,
-  },
-  loginButtonDisabled: {
-    backgroundColor: '#A0A0A0',
-    shadowOpacity: 0.1,
-  },
+  inputFocused: Platform.select({
+    ios: {
+      borderColor: '#60a5fa',
+      borderWidth: 2,
+      backgroundColor: 'rgba(96, 165, 250, 0.05)',
+      shadowColor: '#60a5fa',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+    },
+    android: {
+      borderColor: '#60a5fa',
+      borderWidth: 2,
+      backgroundColor: 'rgba(96, 165, 250, 0.05)',
+      borderStyle: 'solid',
+      elevation: 0,
+    },
+  }),
 });
